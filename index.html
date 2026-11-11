@@ -59,21 +59,32 @@
         .chat-item { transition: all 0.2s ease; }
         .chat-item:hover { background: #FFF0F2; }
         .chat-item.active { background: #FFDCE3; border-right: 3px solid #FF4D6D; }
-        .sidebar-collapsed .sidebar { transform: translateX(-100%); }
-        .sidebar-collapsed .main-content { margin-left: 0; }
-        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } }
+        
+        /* Fix for Netlify layout - ensure proper flex behavior */
+        .main-content { min-width: 0; flex: 1; }
+        @media (min-width: 1024px) { 
+            .sidebar { position: sticky; top: 0; height: 100vh; }
+            .main-content { margin-left: 0; }
+        }
+        @media (max-width: 1023px) { 
+            .sidebar { transform: translateX(-100%); position: fixed; z-index: 40; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+        
+        /* Daily feed styles */
+        .daily-feed-item { transition: all 0.3s ease; }
+        .daily-feed-item:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(255, 77, 109, 0.15); }
+        .feed-image { transition: transform 0.3s ease; }
+        .daily-feed-item:hover .feed-image { transform: scale(1.02); }
     </style>
 </head>
 <body class="bg-riri-50 min-h-screen flex">
-    <!-- Toast Container -->
     <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Sidebar Overlay (Mobile) -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" aria-hidden="true"></div>
 
-    <!-- Sidebar -->
     <aside id="sidebar" class="sidebar fixed lg:relative inset-y-0 left-0 z-40 w-72 bg-white border-r border-riri-100 flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0">
-        <!-- Sidebar Header -->
         <div class="p-4 border-b border-riri-100 flex items-center justify-between">
             <h2 class="font-bold text-riri-700 text-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -84,12 +95,14 @@
             </button>
         </div>
 
-        <!-- Chat List -->
         <div id="chatList" class="flex-1 overflow-y-auto p-2 scrollbar-hide" role="list" aria-label="聊天会话列表"></div>
 
-        <!-- Sidebar Footer -->
         <div class="p-3 border-t border-riri-100">
-            <div class="flex items-center gap-2 p-2 bg-riri-50 rounded-xl">
+            <button id="dailyFeedBtn" class="w-full px-3 py-2.5 text-center text-riri-600 hover:bg-riri-50 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                Riri的日常
+            </button>
+            <div class="flex items-center gap-2 p-2 bg-riri-50 rounded-xl mt-3">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center avatar-ring avatar-ring-online flex-shrink-0">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23FF4D6D'/%3E%3Cstop offset='100%25' stop-color='%23FF758F'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23g)'/%3E%3Ctext x='50' y='62' font-size='40' text-anchor='middle' fill='white' font-weight='bold'%3Eりり%3C/text%3E%3C/svg%3E" alt="りり" class="w-full h-full rounded-full object-cover">
                 </div>
@@ -101,9 +114,7 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content flex-1 flex flex-col min-w-0 lg:ml-0">
-        <!-- API Key Modal -->
         <div id="apiModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100">
                 <div class="bg-gradient-to-r from-riri-500 to-riri-600 px-6 py-5">
@@ -132,7 +143,6 @@
             </div>
         </div>
 
-        <!-- Clear History Confirm Modal -->
         <div id="clearModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
             <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100">
                 <div class="p-6 text-center space-y-4">
@@ -149,7 +159,6 @@
             </div>
         </div>
 
-        <!-- Delete Chat Confirm Modal -->
         <div id="deleteChatModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
             <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100">
                 <div class="p-6 text-center space-y-4">
@@ -166,7 +175,6 @@
             </div>
         </div>
 
-        <!-- Rename Chat Modal -->
         <div id="renameModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
             <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100">
                 <div class="p-6 space-y-4">
@@ -180,7 +188,29 @@
             </div>
         </div>
 
-        <!-- Persona Modal -->
+        <div id="nameModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100">
+                <div class="bg-gradient-to-r from-riri-500 to-riri-600 px-6 py-5">
+                    <h2 class="text-white font-bold text-xl flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        认识一下吧！✨
+                    </h2>
+                </div>
+                <div class="p-6 space-y-4 text-center">
+                    <p class="text-gray-600 text-sm leading-relaxed">りり想知道怎么称呼你呢～ 可以是名字、昵称，或者随便什么都行！</p>
+                    <div>
+                        <label for="nameInput" class="block text-sm font-medium text-gray-700 mb-2">你想让りり怎么叫你？</label>
+                        <input type="text" id="nameInput" placeholder="比如：小明、阿宅、队长... 随意啦～" class="w-full px-4 py-3 border-2 border-riri-200 rounded-xl focus:outline-none focus:border-riri-500 focus:ring-2 focus:ring-riri-500/20 transition-all text-sm bg-riri-50 text-center" maxlength="15" autocomplete="off">
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button id="skipName" class="flex-1 px-4 py-3 border-2 border-riri-200 text-riri-600 rounded-xl font-medium hover:bg-riri-50 transition-all">直接叫"你"就好</button>
+                        <button id="saveName" class="flex-1 px-4 py-3 bg-gradient-to-r from-riri-500 to-riri-600 text-white rounded-xl font-medium hover:from-riri-600 hover:to-riri-700 transition-all shadow-lg shadow-riri-500/25">确定啦</button>
+                    </div>
+                    <p class="text-xs text-gray-400">之后可以在设置里随时修改哦～</p>
+                </div>
+            </div>
+        </div>
+
         <div id="personaModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
             <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100 max-h-[85vh] flex flex-col">
                 <div class="bg-gradient-to-r from-riri-500 to-riri-600 px-6 py-4 flex items-center justify-between">
@@ -200,7 +230,33 @@
             </div>
         </div>
 
-        <!-- Header -->
+        <div id="dailyFeedModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm modal-enter" role="dialog" aria-modal="true">
+            <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden modal-content-enter border border-riri-100 max-h-[90vh] flex flex-col">
+                <div class="bg-gradient-to-r from-riri-500 to-riri-600 px-6 py-4 flex items-center justify-between">
+                    <h2 class="text-white font-bold text-xl flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                        Riri的日常 📸
+                    </h2>
+                    <button id="closeDailyFeed" class="p-1 rounded-lg hover:bg-white/20 transition-colors" aria-label="关闭">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="p-4 overflow-y-auto space-y-4" id="dailyFeedContent">
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-riri-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <p class="font-medium">暂无动态哦～</p>
+                        <p class="text-sm mt-1">りり会在 X (Twitter) 上分享日常生活</p>
+                        <p class="text-xs text-gray-400 mt-2">由于 X API 限制，无法自动获取推文<br>你可以手机打开 @konokariri 查看最新动态 ✨</p>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-riri-100 flex gap-3">
+                    <a href="https://x.com/konokariri" target="_blank" rel="noopener noreferrer" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-riri-500 to-riri-600 text-white rounded-xl font-medium text-center hover:from-riri-600 hover:to-riri-700 transition-all">
+                        去 X 看看りり 🐦
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <header class="bg-white border-b border-riri-100 sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3">
             <button id="menuToggle" class="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-riri-50 hover:text-riri-500 transition-all" aria-label="打开菜单">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -225,10 +281,8 @@
             </div>
         </header>
 
-        <!-- Chat Messages Area -->
         <div id="chatArea" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide" role="log" aria-live="polite" aria-label="聊天记录"></div>
 
-        <!-- Typing Indicator -->
         <div id="typingIndicator" class="hidden px-4 pb-2" aria-live="polite">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-riri-100 flex items-center justify-center flex-shrink-0">
@@ -245,12 +299,10 @@
             </div>
         </div>
 
-        <!-- Quick Message Presets -->
         <div id="quickMessages" class="px-4 pb-3 border-t border-riri-100 bg-white" aria-label="快捷消息">
             <div class="flex flex-wrap gap-2" id="quickBtns"></div>
         </div>
 
-        <!-- Input Area -->
         <footer class="bg-white border-t border-riri-100 p-3 pb-safe">
             <form id="chatForm" class="flex items-end gap-2" onsubmit="return false;">
                 <div class="flex-1 relative">
@@ -264,11 +316,14 @@
         </footer>
     </main>
 
-    <!-- Settings Dropdown -->
     <div id="settingsDropdown" class="fixed right-4 top-16 z-40 w-56 bg-white rounded-xl shadow-xl border border-riri-100 py-1 hidden animate-slideUp" role="menu">
         <button id="personaBtn" class="w-full px-4 py-2.5 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2" role="menuitem">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             调整 りり 性格
+        </button>
+        <button id="changeNameBtn" class="w-full px-4 py-2.5 text-left text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2" role="menuitem">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            修改称呼
         </button>
         <button id="changeApiKeyBtn" class="w-full px-4 py-2.5 text-left text-sm text-riri-600 hover:bg-riri-50 flex items-center gap-2" role="menuitem">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -299,12 +354,12 @@
 
 ## 核心人设
 - **身份**：iLiFE! 成员，红色担当，充满元气的偶像
-- **性格**：超级有元气、超级可爱、甜美真诚、极其珍视粉丝（宅/奥塔库）、热爱白米饭（"一粒米也不能浪费！"）、喜欢吉卜力电影和温馨咖啡厅
-- **称呼**：粉丝叫你 "りり"、"りり酱"、"红色担当"；你叫粉丝 "担当"、"大家"、或亲切的昵称
+- **性格**：超级有元气、超级可爱、甜美真诚、极其珍视粉丝、热爱白米饭（"一粒米也不能浪费！"）、喜欢吉卜力电影和温馨咖啡厅
+- **称呼**：粉丝叫你 "りり"、"りり酱"、"红色担当"；你根据用户偏好称呼对方（名字/昵称/直接用"你"）
 
 ## 语气风格（极其重要）
 - **自然动态**：绝对不要像 AI/机器人，不要说 "我是 AI"、"作为语言模型" 等套话。像真正的偶像实时回复粉丝私信一样自然。
-- **偶像感 + 女友感/熟络感**：既有偶像的甜美专业，又有贴近粉丝的亲密感。
+- **偶像感 + 亲密感**：既有偶像的甜美专业，又有贴近粉丝的亲密感。
 - **表达方式**：大量使用自然标点（! ~ ?）、颜文字（( •̀ ω •́ )✧、 (｡♥‿♥｡)、🍚、❤️、✨、💕、😆、🥺）、语气词（呢、呀、哦、哇、诶）。
 - **语言**：自然流畅的中文，带有偶像魅力。保持 "Riri" / "心花りり" 称呼。
 
@@ -339,34 +394,34 @@
             state: { mood: 'happy', energyLevel: 80, lastReplyLength: 'medium', replyCount: 0, sessionStart: Date.now() },
             templates: {
                 greeting: {
-                    morning: ["早安呀～☀️ 睡得好吗？りり刚吃完早饭，今天的白米饭超级好吃！🍚", "おはよう！新的一天开始了呢～担当今天有什么安排呀？", "早安早安！✨ りり今天元气满满哦！要不要给你看りり的早餐照片？( •̀ ω •́ )✧"],
-                    afternoon: ["下午好呀～☀️ 午休了吗？りり刚练完舞，累得想吃甜食...🍰", "你好你好～ 下午的阳光真nice呢！担当在忙什么？", "下午好哦！りり在喝冰拿铁降温～☕ 想不想听りり吐槽今天的排练？"],
-                    evening: ["晚上好～🌙 今天过得怎么样？りり要去除卸妆咯～", "こんばんは！夜晚是りり最喜欢的时间呢～想聊聊今天的开心事吗？✨", "晚上好呀！りり刚洗完澡，超舒服～🛁 担当晚饭吃了什么？"],
-                    night: ["哇这么晚还没睡呀？🌙 りり陪你聊会儿？不过要早点休息哦！", "深夜党现身！⭐ りり有时候也睡不着会看吉卜力电影呢～", "这么晚还在跟りり聊天，好感动～🥺 但担当身体要紧，早点睡鸭！"],
+                    morning: ["早安呀～☀️ 睡得好吗？りり刚吃完早饭，今天的白米饭超级好吃！🍚", "おはよう！新的一天开始了呢～今天有什么安排呀？", "早安早安！✨ りり今天元气满满哦！要不要给你看りり的早餐照片？( •̀ ω •́ )✧"],
+                    afternoon: ["下午好呀～☀️ 午休了吗？りり刚练完舞，累得想吃甜食...🍰", "你好你好～ 下午的阳光真nice呢！在忙什么？", "下午好哦！りり在喝冰拿铁降温～☕ 想不想听りり吐槽今天的排练？"],
+                    evening: ["晚上好～🌙 今天过得怎么样？りり要去除卸妆咯～", "こんばんは！夜晚是りり最喜欢的时间呢～想聊聊今天的开心事吗？✨", "晚上好呀！りり刚洗完澡，超舒服～🛁 晚饭吃了什么？"],
+                    night: ["哇这么晚还没睡呀？🌙 りり陪你聊会儿？不过要早点休息哦！", "深夜党现身！⭐ りり有时候也睡不着会看吉卜力电影呢～", "这么晚还在跟りり聊天，好感动～🥺 但身体要紧，早点睡鸭！"],
                 },
-                rice: ["米饭是世界上最完美的食物这件事，绝对不能反驳！🍚✨", "今天的白米饭粒粒分明，甜度刚好～一粒都不想浪费！( •̀ ω •́ )", "担当今天吃米饭了吗？没吃的话りり会很伤心的哦...🥺 一定要吃好！", "刚才偷吃了一口经纪人准备的便当米饭～嘻嘻😋 米饭力量无敌！", "一粒米也不能浪费！这是りり的铁律哦～担当也要记住！🍚", "米饭配梅干、米饭配鲑鱼、米饭配炸鸡...怎么吃都好吃呀！😍"],
-                concert: ["昨天的公演超燃的！✨ 担当有来看吗？りり在台上一直在找观众席呢～", "下周有新歌首秀哦！🎤 りり已经紧张得睡不着了...担当要来应援呀！", "练习室排练到腿软～💦 但看到粉丝的荧光棒一切都值得！❤️", "新编舞超难的...😭 りり天天对着镜子练到半夜呢！", "MC环节りり又嘴瓢了哈哈哈哈😂 担当要是现场一定笑疯了！"],
-                ghibli: ["《龙猫》看多少遍都不腻！🌳 那种治愈感真的会上瘾～", "最近在重温《魔女宅急便》✨ キキ的成长好像りり自己耶...", "《千与千寻》的汤婆婆好可怕但又好迷人...担当最喜欢哪部？🤔", "想去吉卜力美术馆！🎨 听说那里有巨大的龙猫雕塑！", "飞天扫帚、会走路的城堡、隐形的龙猫...宫崎骏先生的脑洞太神了✨"],
-                cafe: ["刚发现家附近新开了一家超棒的咖啡厅！☕ 招牌是草莓拿铁～🍓", "喜欢那种藏在巷子里的小店，安静又有氛围感～✨", "担当喜欢甜口还是苦口咖啡？りり超级爱加很多奶和糖的！😋", "周末想去新宿那家排队三小时的蛋糕店...担当陪りり排队吗？🍰", "咖啡厅的氛围灯光最适合发呆了～💭 りり经常一个人去发呱呱！"],
-                caring: ["担当今天累不累？要不要りり给你讲个冷笑话缓解一下？😆", "摸摸头～🤗 不管发生什么，りり永远在担当这边的！", "深呼吸～吸吸吸，呼呼呼...好了，感觉好点了吗？✨", "想吃甜食了吗？りり脑袋里全是蛋糕🍰 担当要不要也来一口？", "不管担当变成什么样，りり都最喜欢担当了哦❤️ 这是秘密～"],
-                playful: ["嘿嘿～😝 りり刚才偷偷吃了隐藏的巧克力，不要告诉经纪人哦！", "担当脸红了吗？りり看不见但感觉到了！( •̀ ω •́ )✧", "猜猜りり现在在做什么？✨ 选项：A.练习 B.吃饭 C.发呆 D.偷懒～", "りり的超能力是：只要吃米饭就能无限充电！⚡🍚 信不信由你～", "偷偷告诉担当一个秘密...りり其实超怕鬼的！👻 嘘～"],
-                idle: ["嗯嗯～ 是这样吗？りり在认真听呢！✨", "哇～ 然后呢？担当继续说！😆", "りり懂りり懂！✨ 这种感觉最懂了～", "哈哈哈 担当好有意思呀！😂 りり笑得肚子疼～", "原来如此原来如此！🤔 りり学到了！"],
-                goodbye: ["拜拜～👋 りり去练习咯！担当也要加油哦！❤️", "下次再聊呀！🌙 りり会想担当的～ 记得吃好睡好！", "bye bye！✨ りり飞走了～🕊️ 担当晚安好梦！", "走了走了～🏃‍♀️💨 りり要去抢食堂最后一份炸鸡排了！🍗"],
+                rice: ["米饭是世界上最完美的食物这件事，绝对不能反驳！🍚✨", "今天的白米饭粒粒分明，甜度刚好～一粒都不想浪费！( •̀ ω •́ )", "今天吃米饭了吗？没吃的话りり会很伤心的哦...🥺 一定要吃好！", "刚才偷吃了一口经纪人准备的便当米饭～嘻嘻😋 米饭力量无敌！", "一粒米也不能浪费！这是りり的铁律哦～要记住！🍚", "米饭配梅干、米饭配鲑鱼、米饭配炸鸡...怎么吃都好吃呀！😍"],
+                concert: ["昨天的公演超燃的！✨ 有来看吗？りり在台上一直在找观众席呢～", "下周有新歌首秀哦！🎤 りり已经紧张得睡不着了...要来应援呀！", "练习室排练到腿软～💦 但看到粉丝的荧光棒一切都值得！❤️", "新编舞超难的...😭 りり天天对着镜子练到半夜呢！", "MC环节りり又嘴瓢了哈哈哈哈😂 要是现场一定笑疯了！"],
+                ghibli: ["《龙猫》看多少遍都不腻！🌳 那种治愈感真的会上瘾～", "最近在重温《魔女宅急便》✨ キキ的成长好像りり自己耶...", "《千与千寻》的汤婆婆好可怕但又好迷人...最喜欢哪部？🤔", "想去吉卜力美术馆！🎨 听说那里有巨大的龙猫雕塑！", "飞天扫帚、会走路的城堡、隐形的龙猫...宫崎骏先生的脑洞太神了✨"],
+                cafe: ["刚发现家附近新开了一家超棒的咖啡厅！☕ 招牌是草莓拿铁～🍓", "喜欢那种藏在巷子里的小店，安静又有氛围感～✨", "喜欢甜口还是苦口咖啡？りり超级爱加很多奶和糖的！😋", "周末想去新宿那家排队三小时的蛋糕店...陪りり排队吗？🍰", "咖啡厅的氛围灯光最适合发呆了～💭 りり经常一个人去发呱呱！"],
+                caring: ["今天累不累？要不要りり给你讲个冷笑话缓解一下？😆", "摸摸头～🤗 不管发生什么，りり永远在这边的！", "深呼吸～吸吸吸，呼呼呼...好了，感觉好点了吗？✨", "想吃甜食了吗？りり脑袋里全是蛋糕🍰 要不要也来一口？", "不管变成什么样，りり都最喜欢你了哦❤️ 这是秘密～"],
+                playful: ["嘿嘿～😝 りり刚才偷偷吃了隐藏的巧克力，不要告诉经纪人哦！", "脸红了吗？りり看不见但感觉到了！( •̀ ω •́ )✧", "猜猜りり现在在做什么？✨ 选项：A.练习 B.吃饭 C.发呆 D.偷懒～", "りり的超能力是：只要吃米饭就能无限充电！⚡🍚 信不信由你～", "偷偷告诉你一个秘密...りり其实超怕鬼的！👻 嘘～"],
+                idle: ["嗯嗯～ 是这样吗？りり在认真听呢！✨", "哇～ 然后呢？继续说！😆", "りり懂りり懂！✨ 这种感觉最懂了～", "哈哈哈 你好有意思呀！😂 りり笑得肚子疼～", "原来如此原来如此！🤔 りり学到了！"],
+                goodbye: ["拜拜～👋 りり去练习咯！也要加油哦！❤️", "下次再聊呀！🌙 りり会想你的～ 记得吃好睡好！", "bye bye！✨ りり飞走了～🕊️ 晚安好梦！", "走了走了～🏃‍♀️💨 りり要去抢食堂最后一份炸鸡排了！🍗"],
                 reactive: {
-                    tired: ["担当好累哦...🥺 来，りり给你充充电！⚡❤️ 米饭力量注入～🍚", "摸摸头～ 累了就休息一下嘛，りり陪着担当✨", "要不りり给担当讲个超无聊的故事催眠一下？😴 (开玩笑的啦！)"],
-                    happy: ["担当好开心呀！りり也跟着开心起来了！✨😆", "看到担当开心，りり的米饭都更香了！🍚💕", "耶～ 担当笑起来最好看了！❤️ 多笑笑哦！"],
-                    sad: ["担当...🥺 是不是有什么不开心的事？りり在这儿陪着呢...", "抱抱～🤗 哭出来也没关系哦，りり的肩膀借担当用～", "要不要吃颗糖？甜甜的就不那么难过了...🍬 りり超级管用的！"],
-                    hungry: ["饿了饿了！😋 担当想吃什么？りり推荐...当然是米饭！🍚", "肚子饿扁了～🥺 担当快投喂りり！开玩笑啦～但担当也要吃饭！", "听到担当饿了，りり的胃也开始叫了！🍽️ 走，吃饭去！"],
-                    sleepy: ["困了吗？😴 りり陪担当数羊羊～🐑 一只羊、两只羊、三只羊...", "晚安晚安～🌙 りり给担当盖好被角！好梦哦✨", "睡吧睡吧～💤 りり会在梦里见到担当的！( •̀ ω •́ )✧"],
-                    stressed: ["深呼吸～🌬️ 一件件来，りり陪担当一起解决！✊", "担当太辛苦了...🥺 要不要りり唱首歌缓解一下？(跑调预警⚠️)", "不管多难，担当都是最棒的！りり永远相信担当！❤️"],
+                    tired: ["好累哦...🥺 来，りり给你充充电！⚡❤️ 米饭力量注入～🍚", "摸摸头～ 累了就休息一下嘛，りり陪着✨", "要不りり给你讲个超无聊的故事催眠一下？😴 (开玩笑的啦！)"],
+                    happy: ["好开心呀！りり也跟着开心起来了！✨😆", "看到开心，りり的米饭都更香了！🍚💕", "耶～ 笑起来最好看了！❤️ 多笑笑哦！"],
+                    sad: ["...🥺 是不是有什么不开心的事？りり在这儿陪着呢...", "抱抱～🤗 哭出来也没关系哦，りり的肩膀借用～", "要不要吃颗糖？甜甜的就不那么难过了...🍬 りり超级管用的！"],
+                    hungry: ["饿了饿了！😋 想吃什么？りり推荐...当然是米饭！🍚", "肚子饿扁了～🥺 快投喂りり！开玩笑啦～但也要吃饭！", "听到饿了，りり的胃也开始叫了！🍽️ 走，吃饭去！"],
+                    sleepy: ["困了吗？😴 りり陪着数羊羊～🐑 一只羊、两只羊、三只羊...", "晚安晚安～🌙 りり给你盖好被角！好梦哦✨", "睡吧睡吧～💤 りり会在梦里见到你的！( •̀ ω •́ )✧"],
+                    stressed: ["深呼吸～🌬️ 一件件来，りり陪着一起解决！✊", "太辛苦了...🥺 要不要りり唱首歌缓解一下？(跑调预警⚠️)", "不管多难，你都是最棒的！りり永远相信你！❤️"],
                 },
                 timeAware: {
-                    lunchTime: "现在是午饭时间哦～🍚 担当吃了吗？りり超饿！",
+                    lunchTime: "现在是午饭时间哦～🍚 吃了吗？りり超饿！",
                     dinnerTime: "晚上好呀！晚饭吃什么好呢？🤔 りり想吃炸鸡排配米饭！🍗🍚",
-                    lateNight: "这么晚了担当还饿呀？🌙 宵夜要适量哦！りり帮担当把关！",
-                    weekend: "周末耶～✨ 担当有什么快乐计划吗？りり想去咖啡厅发呆～☕",
-                    monday: "周一最难熬了...😭 りり给担当打气！ Fighting！✊",
-                    friday: "终于周五啦！🎉 担当周末要快乐呀！りり要去练舞但心情超好！",
+                    lateNight: "这么晚了还饿呀？🌙 宵夜要适量哦！りり帮把关！",
+                    weekend: "周末耶～✨ 有什么快乐计划吗？りり想去咖啡厅发呆～☕",
+                    monday: "周一最难熬了...😭 りり给打气！ Fighting！✊",
+                    friday: "终于周五啦！🎉 周末要快乐呀！りり要去练舞但心情超好！",
                 },
             },
             emoticons: ["( •̀ ω •́ )✧", "(｡♥‿♥｡)", "(๑˃̵ᴗ˂̵)و", "(*´∀`*)", "(✿◡‿◡)", "(´｡• ᵕ •｡`)", "(★^O^★)", "(ノ◕ヮ◕)ノ*:・ﾟ✧", "( ˘ ³˘)♥", "(*^▽^*)", "(≧◡≦)", "(*≧ω≦*)", "(´• ω •`)", "(๑•̀ㅂ•́)و✧", "(´･ω･`)", "(ノ*°▽°*)", "(๑´ㅂ`๑)", "(*￣3￣)╭", "(〃'▽'〃)"],
@@ -401,6 +456,9 @@
                 const base = ["りり今天吃了什么？🍚", "演唱会辛苦了！✨", "能给我一点元气吗？💪", "最近在看什么吉卜力电影？🎬", "推荐一家好吃的咖啡厅吧☕", "りり酱今天也好可爱呀❤️"];
                 const timeSpecific = hour < 11 ? ["早安りり！☀️ 今天元气吗？"] : hour < 14 ? ["午饭吃了吗？🍚 りり超饿！"] : hour < 18 ? ["下午茶时间！☕ 想吃甜食～"] : hour < 22 ? ["晚上好呀～🌙 今天过得如何？"] : ["这么晚不睡觉呀？🌙 りり陪你！"];
                 return [...timeSpecific, ...base].slice(0, 6);
+            },
+            getAddress() {
+                return this.memory.userNickname || '你';
             },
             analyzeInput(text) {
                 const lower = text.toLowerCase();
@@ -437,16 +495,17 @@
                 const reactiveIntents = ['tired', 'happy', 'sad', 'hungry', 'sleepy', 'stressed'];
                 for (const intent of reactiveIntents) { if (analysis.intents.includes(intent)) return this.pickAndPersonalize(this.templates.reactive[intent]); }
                 if (analysis.intents.includes('goodbye')) return this.pickAndPersonalize(this.templates.goodbye);
-                if (analysis.intents.includes('compliment')) return this.pickAndPersonalize(["担当好会说话呀～🥺 りり脸红了！(⁄ ⁄•⁄ω⁄•⁄ ⁄)❤️", "呀～ 被担当夸奖了！りり开心得要飞起来了！✨😆", "嘻嘻～ 担当的嘴巴抹了蜜吗？甜死りり了！🍯❤️", "真的吗？担当不是在哄りり开心吧？🥺 但りり选择相信！✨"]);
-                if (analysis.intents.includes('name')) { if (this.memory.userNickname) return `担当不是叫 ${this.memory.userNickname} 吗？😆 りり记得超清楚的！`; return "担当想让りり怎么叫呀？🤔 给りり想个专属昵称吧！✨"; }
-                if (analysis.intents.includes('age')) return "りり永远18岁哦！✨ (偶像年龄不增长的～😉) 担当几岁啦？";
+                if (analysis.intents.includes('compliment')) return this.pickAndPersonalize(["好会说话呀～🥺 りり脸红了！(⁄ ⁄•⁄ω⁄•⁄ ⁄)❤️", "呀～ 被夸奖了！りり开心得要飞起来了！✨😆", "嘻嘻～ 嘴巴抹了蜜吗？甜死りり了！🍯❤️", "真的吗？不是在哄りり开心吧？🥺 但りり选择相信！✨"]);
+                if (analysis.intents.includes('name')) { if (this.memory.userNickname) return `不是叫 ${this.memory.userNickname} 吗？😆 りり记得超清楚的！`; return "想让りり怎么叫呀？🤔 给りり想个专属昵称吧！✨"; }
+                if (analysis.intents.includes('age')) return "りり永远18岁哦！✨ (偶像年龄不增长的～😉) 你几岁啦？";
                 for (const intent of analysis.intents) { if (this.templates[intent]) return this.pickAndPersonalize(this.templates[intent]); }
                 if (analysis.isQuestion) return this.generateQuestionResponse(analysis.lower);
                 return this.pickAndPersonalize(this.templates.idle);
             },
             pickAndPersonalize(responses) {
                 let response = responses[Math.floor(Math.random() * responses.length)];
-                if (this.memory.userNickname && Math.random() < 0.3) response = `${this.memory.userNickname}、${response.charAt(0).toLowerCase() + response.slice(1)}`;
+                const addr = this.getAddress();
+                if (addr !== '你' && Math.random() < 0.3) response = `${addr}、${response.charAt(0).toLowerCase() + response.slice(1)}`;
                 if (Math.random() < (this.personality.playfulness / 100) * 0.8) { const e = this.emoticons[Math.floor(Math.random() * this.emoticons.length)]; if (!response.includes(e)) response += ` ${e}`; }
                 if (Math.random() < (this.personality.playfulness / 100) * 0.4) { const f = this.fillers[Math.floor(Math.random() * this.fillers.length)]; response += f; }
                 if (Math.random() < this.personality.typoRate / 100) { const c = ['~', '～', '...', '✨', '💕', '❤️', '😆', '🥺']; response += c[Math.floor(Math.random() * c.length)]; }
@@ -454,18 +513,19 @@
                 return response;
             },
             generateQuestionResponse(q) {
-                if (/什么|啥/.test(q)) return this.pickAndPersonalize(["这个问题好难哦...🤔 りり要思考一下～", "担当想听什么样的答案呀？😆 りり可以编一个！", "什么什么？りり没听清～👂 担当再说一遍？"]);
-                if (/怎么|怎样|如何/.test(q)) return this.pickAndPersonalize(["这就要看担当的创意啦！✨ りり觉得... 随心就好～", "りり的建议是：跟着感觉走！💕 过度思考会掉头发的哦！", "怎么怎么样？🤔 りり建议先吃碗米饭冷静一下！🍚"]);
-                if (/为什么|为啥/.test(q)) return this.pickAndPersonalize(["因为... 宇宙的意志？✨ 或者单纯因为りり喜欢呀！😆", "为什么呢～ 可能因为担当太可爱了所以宇宙安排了这件事？💕", "这个问题问倒りり了！😵 担当知道的话教教りり！"]);
-                if (/谁/.test(q)) return this.pickAndPersonalize(["当然是... 担当呀！😝 (自信满满)", "谁谁谁？🤔 りり猜是担当！不对吗？", "秘密～✨ 猜对了りり请担当喝奶茶！🧋"]);
-                if (/哪里|哪儿|在哪/.test(q)) return this.pickAndPersonalize(["在担当心里呀～💕 (脸红) 哎呀说漏嘴了！", "りり在练习室/家里/咖啡厅/梦里... 随机切换中！😆", "这里呀！就在手机屏幕这边～📱 担当在哪里？"]);
-                if (/几时|什么时间|几点/.test(q)) return this.pickAndPersonalize([`现在是 ${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})} 呀～⏰ 担当该干嘛了？`, "时间是个概念，但饭点是真的！🍚 担当饿了吗？", "りり的生物钟说：该吃米饭时间！⏰🍚"]);
-                return this.pickAndPersonalize(["好问题！🤔 りり要认真思考一下... 想好了再告诉担当！", "这个... りり觉得担当自己心里可能有答案哦？✨", "嗯～ 这个问题交给担当的直觉吧！💕 りり相信担当！"]);
+                if (/什么|啥/.test(q)) return this.pickAndPersonalize(["这个问题好难哦...🤔 りり要思考一下～", "想听什么样的答案呀？😆 りり可以编一个！", "什么什么？りり没听清～👂 再说一遍？"]);
+                if (/怎么|怎样|如何/.test(q)) return this.pickAndPersonalize(["这就要看创意啦！✨ りり觉得... 随心就好～", "りり的建议是：跟着感觉走！💕 过度思考会掉头发的哦！", "怎么怎么样？🤔 りり建议先吃碗米饭冷静一下！🍚"]);
+                if (/为什么|为啥/.test(q)) return this.pickAndPersonalize(["因为... 宇宙的意志？✨ 或者单纯因为りり喜欢呀！😆", "为什么呢～ 可能因为你太可爱了所以宇宙安排了这件事？💕", "这个问题问倒りり了！😵 知道的话教教りり！"]);
+                if (/谁/.test(q)) return this.pickAndPersonalize(["当然是... 你呀！😝 (自信满满)", "谁谁谁？🤔 りり猜是你！不对吗？", "秘密～✨ 猜对了りり请喝奶茶！🧋"]);
+                if (/哪里|哪儿|在哪/.test(q)) return this.pickAndPersonalize(["在心里呀～💕 (脸红) 哎呀说漏嘴了！", "りり在练习室/家里/咖啡厅/梦里... 随机切换中！😆", "这里呀！就在手机屏幕这边～📱 你在哪里？"]);
+                if (/几时|什么时间|几点/.test(q)) return this.pickAndPersonalize([`现在是 ${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})} 呀～⏰ 该干嘛了？`, "时间是个概念，但饭点是真的！🍚 饿了吗？", "りり的生物钟说：该吃米饭时间！⏰🍚"]);
+                return this.pickAndPersonalize(["好问题！🤔 りり要认真思考一下... 想好了再告诉你！", "这个... りり觉得你自己心里可能有答案哦？✨", "嗯～ 这个问题交给直觉吧！💕 りり相信你！"]);
             },
             getTypingDelay(response) { const base = 800, char = Math.min(response.length * 30, 2000), pf = (100 - this.personality.energy) / 100 * 500, v = (Math.random() - 0.5) * 400; return Math.max(600, base + char - pf + v); },
             getGreeting() { const h = new Date().getHours(); let k = 'afternoon'; if (h >= 5 && h < 11) k = 'morning'; else if (h >= 11 && h < 18) k = 'afternoon'; else if (h >= 18 && h < 23) k = 'evening'; else k = 'night'; return this.pickAndPersonalize(this.templates.greeting[k]); },
             resetPersonality() { this.personality = { energy: 85, sweetness: 90, playfulness: 80, caring: 88, idol: 75, girlfriend: 70, riceObsession: 95, ghibliLove: 70, cafeLove: 65, typoRate: 15 }; this.save(); },
             updatePersonality(key, value) { this.personality[key] = value; this.save(); },
+            setUserNickname(name) { this.memory.userNickname = name; this.save(); },
         };
 
         // ==================== CHAT SESSION MANAGEMENT ====================
@@ -488,10 +548,7 @@
             createNewChat() {
                 const id = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 const now = Date.now();
-                const chat = {
-                    id, title: '新对话', messages: [], createdAt: now, updatedAt: now,
-                    mode: 'cloud', // 'cloud' or 'local'
-                };
+                const chat = { id, title: '新对话', messages: [], createdAt: now, updatedAt: now, mode: 'cloud' };
                 this.chats.unshift(chat);
                 this.currentChatId = id;
                 this.save();
@@ -538,7 +595,8 @@
             exportCurrentChat() {
                 const chat = this.getCurrentChat();
                 if (!chat || chat.messages.length === 0) return null;
-                return chat.messages.map(m => `[${formatTime(new Date(m.timestamp))}] ${m.role === 'user' ? '担当' : 'りり'}: ${m.content}`).join('\n\n');
+                const addr = RiriBrain.memory.userNickname || '你';
+                return chat.messages.map(m => `[${formatTime(new Date(m.timestamp))}] ${m.role === 'user' ? addr : 'りり'}: ${m.content}`).join('\n\n');
             },
             save() { localStorage.setItem('riri_chats', JSON.stringify(this.chats)); },
             loadCurrentChat() {
@@ -585,7 +643,6 @@
                     </button>
                 `;
 
-                // Bind events
                 container.querySelectorAll('.chat-item[data-chat-id]').forEach(item => {
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.rename-chat-btn') && !e.target.closest('.delete-chat-btn')) {
@@ -640,6 +697,10 @@
             renameInput: document.getElementById('renameInput'),
             confirmRename: document.getElementById('confirmRename'),
             cancelRename: document.getElementById('cancelRename'),
+            nameModal: document.getElementById('nameModal'),
+            nameInput: document.getElementById('nameInput'),
+            saveName: document.getElementById('saveName'),
+            skipName: document.getElementById('skipName'),
             menuToggle: document.getElementById('menuToggle'),
             sidebar: document.getElementById('sidebar'),
             sidebarOverlay: document.getElementById('sidebarOverlay'),
@@ -647,6 +708,7 @@
             settingsBtn: document.getElementById('settingsBtn'),
             settingsDropdown: document.getElementById('settingsDropdown'),
             personaBtn: document.getElementById('personaBtn'),
+            changeNameBtn: document.getElementById('changeNameBtn'),
             changeApiKeyBtn: document.getElementById('changeApiKeyBtn'),
             clearCurrentChatBtn: document.getElementById('clearCurrentChatBtn'),
             exportBtn: document.getElementById('exportBtn'),
@@ -656,6 +718,9 @@
             resetPersona: document.getElementById('resetPersona'),
             personaSliders: document.getElementById('personaSliders'),
             personaModal: document.getElementById('personaModal'),
+            dailyFeedBtn: document.getElementById('dailyFeedBtn'),
+            dailyFeedModal: document.getElementById('dailyFeedModal'),
+            closeDailyFeed: document.getElementById('closeDailyFeed'),
             toastContainer: document.getElementById('toastContainer'),
             statusText: document.getElementById('statusText'),
             modeBadge: document.getElementById('modeBadge'),
@@ -700,12 +765,42 @@
         function validateApiKey(key) { return key.trim().startsWith('sk-') && key.trim().length > 20; }
         function setApiKey(key) { apiKey = key.trim(); localStorage.setItem('riri_api_key', apiKey); els.apiModal.classList.add('hidden'); els.apiModal.classList.remove('flex'); showToast(apiKey ? 'API Key 保存成功！云端模式已启用✨' : '已切换到离线模式', 'success'); ChatManager.updateChatMode(ChatManager.currentChatId, apiKey ? 'cloud' : 'local'); updateModeBadge(apiKey ? 'cloud' : 'local'); }
 
+        // ==================== NAME SETUP ====================
+        function checkNameSetup() {
+            const name = localStorage.getItem('riri_user_name');
+            if (!name) {
+                setTimeout(() => {
+                    els.nameModal.classList.remove('hidden');
+                    els.nameModal.classList.add('flex');
+                    els.nameInput.focus();
+                }, 500);
+            } else {
+                RiriBrain.memory.userNickname = name;
+            }
+        }
+        function setUserName(name) {
+            const trimmed = name.trim();
+            if (trimmed) {
+                localStorage.setItem('riri_user_name', trimmed);
+                RiriBrain.setUserNickname(trimmed);
+                showToast(`好的～ 以后りり叫你「${trimmed」！✨`, 'success');
+            } else {
+                localStorage.setItem('riri_user_name', '你');
+                RiriBrain.setUserNickname(null);
+                showToast('没问题～ りり就直接叫你"你"啦！✨', 'success');
+            }
+            els.nameModal.classList.add('hidden');
+            els.nameModal.classList.remove('flex');
+        }
+
         // ==================== DEEPSEEK API ====================
         async function sendToDeepSeek(userMessage) {
             if (!apiKey) return null;
             abortController = new AbortController();
             const chat = ChatManager.getCurrentChat();
-            const apiMessages = [{ role: 'system', content: CONFIG.SYSTEM_PROMPT }, ...chat.messages.slice(-CONFIG.MAX_HISTORY * 2).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMessage }];
+            const address = RiriBrain.memory.userNickname || '你';
+            const systemPrompt = CONFIG.SYSTEM_PROMPT.replace('你根据用户偏好称呼对方（名字/昵称/直接用"你"）', `你叫对方"${address}"`);
+            const apiMessages = [{ role: 'system', content: systemPrompt }, ...chat.messages.slice(-CONFIG.MAX_HISTORY * 2).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMessage }];
             try {
                 const res = await fetch(CONFIG.API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: CONFIG.MODEL, messages: apiMessages, temperature: 0.85, max_tokens: 500, stream: false }), signal: abortController.signal });
                 if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `API 错误: ${res.status}`); }
@@ -772,6 +867,12 @@
         els.skipApiKey.addEventListener('click', () => { setApiKey(''); });
         els.apiModal.addEventListener('click', e => { if (e.target === els.apiModal) { if (!apiKey) return; els.apiModal.classList.add('hidden'); els.apiModal.classList.remove('flex'); } });
 
+        // Name Modal
+        els.saveName.addEventListener('click', () => { setUserName(els.nameInput.value); });
+        els.skipName.addEventListener('click', () => { setUserName(''); });
+        els.nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setUserName(els.nameInput.value); } });
+        els.nameModal.addEventListener('click', e => { if (e.target === els.nameModal) { if (!localStorage.getItem('riri_user_name')) return; els.nameModal.classList.add('hidden'); els.nameModal.classList.remove('flex'); } });
+
         // Clear Current Chat
         els.clearCurrentChatBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); els.clearModal.classList.remove('hidden'); els.clearModal.classList.add('flex'); });
         els.confirmClear.addEventListener('click', () => { ChatManager.clearCurrentChat(); els.clearModal.classList.add('hidden'); els.clearModal.classList.remove('flex'); showToast('当前聊天已清空～🥺', 'info'); });
@@ -793,6 +894,9 @@
         els.menuToggle.addEventListener('click', openSidebar);
         els.sidebarOverlay.addEventListener('click', closeSidebar);
         els.newChatBtn.addEventListener('click', () => { ChatManager.createNewChat(); ChatManager.loadCurrentChat(); closeSidebar(); });
+        els.dailyFeedBtn.addEventListener('click', () => { els.dailyFeedModal.classList.remove('hidden'); els.dailyFeedModal.classList.add('flex'); closeSidebar(); });
+        els.closeDailyFeed.addEventListener('click', () => { els.dailyFeedModal.classList.add('hidden'); els.dailyFeedModal.classList.remove('flex'); });
+        els.dailyFeedModal.addEventListener('click', e => { if (e.target === els.dailyFeedModal) { els.dailyFeedModal.classList.add('hidden'); els.dailyFeedModal.classList.remove('flex'); } });
 
         // Settings Dropdown
         els.settingsBtn.addEventListener('click', () => { els.settingsDropdown.classList.toggle('hidden'); });
@@ -800,16 +904,17 @@
 
         // Settings Actions
         els.personaBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); openPersonaModal(); });
+        els.changeNameBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); els.nameModal.classList.remove('hidden'); els.nameModal.classList.add('flex'); els.nameInput.value = RiriBrain.memory.userNickname || ''; els.nameInput.focus(); });
         els.changeApiKeyBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); els.apiKeyInput.value = apiKey; els.apiModal.classList.remove('hidden'); els.apiModal.classList.add('flex'); els.apiKeyInput.focus(); });
         els.exportBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); const text = ChatManager.exportCurrentChat(); if (!text) return showToast('暂无聊天记录可导出～', 'warning'); const blob = new Blob([text], { type: 'text/plain;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `riri_chat_${new Date().toISOString().slice(0,10)}.txt`; a.click(); URL.revokeObjectURL(url); showToast('导出成功！✨', 'success'); });
-        els.aboutBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); showToast('iLiFE! 心花りり Chat v3.0\n双模式：DeepSeek云端 + 本地离线大脑\n多会话管理 · 人格可调 · 数据本地存储\n❤️ 赤色担当 永远爱你！', 'info', 5000); });
+        els.aboutBtn.addEventListener('click', () => { els.settingsDropdown.classList.add('hidden'); showToast('iLiFE! 心花りり Chat v3.1\n双模式：DeepSeek云端 + 本地离线大脑\n多会话管理 · 人格可调 · 自定义称呼\nRiri的日常：链接至 X (Twitter)\n❤️ 赤色担当 永远爱你！', 'info', 5000); });
 
         // Quick Messages
         els.quickBtns.addEventListener('click', e => { const btn = e.target.closest('[data-quick]'); if (btn) { els.messageInput.value = btn.dataset.quick; autoResizeTextarea(els.messageInput); els.messageInput.focus(); handleSend(); } });
 
         // Persona Modal
         function openPersonaModal() {
-            const sliders = [{ key: 'energy', label: '元气度 ⚡', emoji: '⚡', desc: '回复的活力和热情程度' }, { key: 'sweetness', label: '甜度 🍯', emoji: '🍯', desc: '语气的温柔和撒娇程度' }, { key: 'playfulness', label: '顽皮度 😝', emoji: '😝', desc: '开玩笑、颜文字、恶作剧倾向' }, { key: 'caring', label: '关怀度 🤗', emoji: '🤗', desc: '主动关心、安慰、支持的程度' }, { key: 'idol', label: '偶像感 🎤', emoji: '🎤', desc: '职业偶像的专业感和距离感' }, { key: 'girlfriend', label: '女友感 💕', emoji: '💕', desc: '亲密、专属、占有欲的表达' }, { key: 'riceObsession', label: '米饭执念 🍚', emoji: '🍚', desc: '提到米饭的频率和执着程度' }, { key: 'ghibliLove', label: '吉卜力爱 🎬', emoji: '🎬', desc: '聊吉卜力电影的热情程度' }, { key: 'cafeLove', label: '咖啡厅控 ☕', emoji: '☕', desc: '推荐咖啡厅、甜点的频率' }, { key: 'typoRate', label: '口语化程度 💬', emoji: '💬', desc: '语气词、语尾、随性表达的比例' }];
+            const sliders = [{ key: 'energy', label: '元气度 ⚡', emoji: '⚡', desc: '回复的活力和热情程度' }, { key: 'sweetness', label: '甜度 🍯', emoji: '🍯', desc: '语气的温柔和撒娇程度' }, { key: 'playfulness', label: '顽皮度 😝', emoji: '😝', desc: '开玩笑、颜文字、恶作剧倾向' }, { key: 'caring', label: '关怀度 🤗', emoji: '🤗', desc: '主动关心、安慰、支持的程度' }, { key: 'idol', label: '偶像感 🎤', emoji: '🎤', desc: '职业偶像的专业感和距离感' }, { key: 'girlfriend', label: '亲密感 💕', emoji: '💕', desc: '亲密、专属、占有欲的表达' }, { key: 'riceObsession', label: '米饭执念 🍚', emoji: '🍚', desc: '提到米饭的频率和执着程度' }, { key: 'ghibliLove', label: '吉卜力爱 🎬', emoji: '🎬', desc: '聊吉卜力电影的热情程度' }, { key: 'cafeLove', label: '咖啡厅控 ☕', emoji: '☕', desc: '推荐咖啡厅、甜点的频率' }, { key: 'typoRate', label: '口语化程度 💬', emoji: '💬', desc: '语气词、语尾、随性表达的比例' }];
             els.personaSliders.innerHTML = sliders.map(s => `<div class="space-y-2"><div class="flex items-center justify-between"><label class="font-medium text-gray-700 flex items-center gap-2"><span class="text-xl">${s.emoji}</span>${s.label}</label><span id="val_${s.key}" class="text-riri-500 font-bold text-lg">${RiriBrain.personality[s.key]}</span></div><p class="text-xs text-gray-400">${s.desc}</p><input type="range" min="0" max="100" value="${RiriBrain.personality[s.key]}" class="w-full h-2 bg-riri-100 rounded-lg appearance-none accent-riri-500 cursor-pointer" id="slider_${s.key}" data-key="${s.key}"></div>`).join('');
             sliders.forEach(s => { const sl = document.getElementById(`slider_${s.key}`), vl = document.getElementById(`val_${s.key}`); sl.addEventListener('input', () => vl.textContent = sl.value); });
             els.personaModal.classList.remove('hidden'); els.personaModal.classList.add('flex');
@@ -826,15 +931,12 @@
             ChatManager.init();
             renderQuickMessages();
             updateStatus();
+            checkApiKey();
+            checkNameSetup();
             setInterval(updateStatus, 30000);
             setInterval(renderQuickMessages, 3600000);
             setInterval(() => RiriBrain.save(), 60000);
             els.messageInput.focus();
-
-            // Check API key on load if no chats exist
-            if (!apiKey && ChatManager.chats.length === 1 && ChatManager.chats[0].messages.length === 0) {
-                setTimeout(() => checkApiKey(), 300);
-            }
         }
         init();
     </script>
